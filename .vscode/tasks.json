@@ -1,7 +1,7 @@
 {
     "tasks": [
         {
-            "type": "cppbuild",
+            "type": "shell",
             "label": "C/C++: g++.exe build active file",
             "command": "C:\\Program Files\\CodeBlocks\\MinGW\\bin\\g++.exe",
             "args": [
@@ -14,9 +14,21 @@
             "options": {
                 "cwd": "${fileDirname}"
             },
-            "problemMatcher": [
-                "$gcc"
-            ],
+            "problemMatcher": {
+                "owner": "cpp",
+                "fileLocation": [
+                    "relative",
+                    "${workspaceRoot}"
+                ],
+                "pattern": {
+                    "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "severity": 4,
+                    "message": 5
+                }
+            },
             "group": {
                 "kind": "build",
                 "isDefault": true
