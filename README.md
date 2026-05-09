@@ -1,106 +1,81 @@
-# Stock Portfolio Manager
+# StockPro | C++ Full-Stack Portfolio Manager
 
-A robust C++ command-line application designed to track and manage stock market investments using a specialized doubly linked list architecture.
-
-## 1. Introduction
-
-### 1.1 Problem Statement
-Maintaining an accurate history of stock transactions is a complex task. Standard flat files or simple arrays often struggle with:
-- **Historical Integrity**: Tracking the exact sequence of buy and sell orders.
-- **Holdings Calculation**: Dynamically determining current positions by traversing full transaction histories.
-- **Corporate Actions**: Adjusting historical data for events like stock splits without losing original transaction context.
-- **Performance Analysis**: Calculating realized profit or loss over specific, user-defined date ranges.
-
-The **Stock Portfolio Manager** addresses these challenges by implementing a custom Doubly Linked List (DLL), where each node represents a unique transaction, allowing for efficient traversal, modification, and reporting.
-
-### 1.2 Operational Objective
-The primary goal of this system is to provide a reliable, persistent, and user-friendly interface for investment tracking. It aims to:
-- **Ensure Data Persistence**: Save and load all transaction data to a local CSV database.
-- **Automate Calculations**: Instantly compute net holdings and profit/loss metrics.
-- **Support Flexibility**: Allow users to edit or delete past transactions while maintaining list integrity.
-- **Handle Scalability**: Efficiently manage a growing list of transactions through optimized DLL operations.
-
-### 1.3 Brief Overview of the System
-The system is built on a custom `PortfolioManager` class that manages a doubly linked list of `Node` structures. 
-- **Data Structure**: Each `Node` contains metadata such as Transaction ID, Date, Stock Name, Type (Buy/Sell), Quantity, and Unit Price.
-- **Persistence Layer**: All actions are mirrored in a `transactions.csv` file, ensuring no data loss between sessions.
-- **Core Functionality**:
-  - **Transaction Management**: Full CRUD (Create, Read, Update, Delete) capabilities.
-  - **Portfolio Insights**: Real-time calculation of current holdings and P/L reports.
-  - **Stock Split Utility**: A specialized function to adjust quantities and prices across historical transactions based on split ratios.
+StockPro is a high-performance, professional-grade stock portfolio management suite. It combines a robust **Native C++ Backend** with a modern **Glassmorphic Web Frontend** to provide real-time financial insights, risk analysis, and data mobility.
 
 ---
 
-## 2. Header Files Explanation
+## 🏗️ System Architecture & Pipeline
 
-The application utilizes several standard C++ libraries to provide its functionality:
+StockPro operates on a custom **RESTful API Pipeline** built from the ground up without heavy external frameworks.
 
-| Header | Purpose in the System |
-| :--- | :--- |
-| `<iostream>` | Handles standard input and output (cin/cout) for the command-line interface. |
-| `<string>` | Provides the `std::string` class for managing stock names, dates, and transaction types. |
-| `<map>` | Used to efficiently aggregate and calculate current holdings by mapping stock names to their net quantities. |
-| `<iomanip>` | Enables precise output formatting (e.g., `setw`, `fixed`, `setprecision`) for tabular history views and financial reports. |
-| `<fstream>` | Facilitates file stream operations for saving and loading the `transactions.csv` database. |
-| `<sstream>` | Used for string stream parsing when reading CSV data and splitting comma-separated values into individual fields. |
-| `<limits>` | Provides `std::numeric_limits`, used to robustly clear the input buffer and handle invalid user input without crashing. |
+### 1. The C++ Engine (`server.cpp`)
+The heart of the application is a native Windows C++ server utilizing the **Winsock2 (Windows Sockets)** library.
+- **Protocol**: HTTP/1.1 over TCP/IP.
+- **Data Handling**: The server acts as a File System Manager, reading and writing to `transactions.csv` with zero-latency overhead.
+- **Endpoints**:
+    - `GET /`: Serves the UI (`index.html`).
+    - `GET /api/transactions`: Parses the CSV and returns a JSON array to the frontend.
+    - `POST /api/transactions`: Receives new transaction strings and appends them to the database.
+    - `POST /api/import`: Replaces the entire local database with an uploaded CSV stream.
+    - `GET /api/export`: Streams the local `transactions.csv` directly to the browser for download.
 
----
-
-## 3. Core Features
-
-### 🟢 Transaction Management
-- **Add**: Record new Buy or Sell orders with automatic ID generation.
-- **Edit**: Modify any field of an existing transaction using its unique ID.
-- **Delete**: Remove transactions from history; the system automatically repairs the DLL links.
-
-### 📊 Portfolio Analysis
-- **Current Holdings**: Scans the entire transaction history to display the net shares currently held for every stock in the portfolio.
-- **Profit/Loss Reporting**: Generates a detailed report for any specific date range, calculating total buy value, total sell value, and net profit/loss status.
-
-### ✂️ Stock Split Adjustment
-A sophisticated tool to handle stock splits (e.g., 2:1, 5:1). It adjusts:
-1. **Quantity**: Multiplied by the split ratio.
-2. **Unit Price**: Divided by the split ratio.
-This can be applied to all transactions for a stock or filtered by type (Buy/Sell).
+### 2. The Communication Pipeline
+When you perform an action in the browser (e.g., adding a stock):
+1. **Frontend**: `script.js` captures your input and formats it into a CSV-compliant string.
+2. **Request**: A `fetch()` request is sent to `http://localhost:8080`.
+3. **Backend**: The C++ server intercepts the packet, parses the HTTP headers, extracts the payload, and performs an atomic write to `transactions.csv`.
+4. **Synchronization**: The frontend then re-fetches the updated data to ensure the UI perfectly matches the server's state.
 
 ---
 
-## 4. Technical Architecture
+## 📊 Data Management Features
 
-### The Doubly Linked List (DLL)
-The core of the system is a DLL. Unlike a standard array, a DLL allows for:
-- **O(1) Deletion**: Once the node is found, pointers are remapped instantly.
-- **Bi-directional Traversal**: Useful for sorting or complex reporting (though currently utilized for linear scanning).
+### 🔄 Undo & Redo (Snapshot System)
+Every time a change is made, the frontend captures a "Snapshot" of the entire database before the edit.
+- **Undo**: Reverts the local state to the previous snapshot and re-syncs it with the C++ server.
+- **Redo**: Allows you to jump forward if you reversed a change by mistake.
 
-```cpp
-struct Node {
-    int id;
-    string date;
-    string stockName;
-    string type;
-    int quantity;
-    double unitPrice;
-    Node *prev; // Pointer to previous transaction
-    Node *next; // Pointer to next transaction
-};
-```
+### 📈 Stock Split Engine
+Unlike simple trackers, StockPro handles corporate actions.
+- **Logic**: If a "Split" transaction is detected (e.g., 2-for-1), the system chronologically multiplies existing share counts and divides average costs, ensuring historical profit/loss accuracy remains intact.
+
+### 🛡️ Risk Intelligence (Portfolio Beta)
+The dashboard calculates a weighted **Portfolio Beta** using a built-in market intelligence dictionary. 
+- **Calculation**: $\sum (Weight_i \times Beta_i)$
+- It tells you if your portfolio is more volatile (>1.0) or safer (<1.0) than the broader market.
 
 ---
 
-## 5. Getting Started
+## 📂 File Structure
+- `server.cpp`: The C++ source code (Winsock2 server logic).
+- `index.html`: The glassmorphic UI structure.
+- `style.css`: Premium theme-aware design system.
+- `script.js`: Frontend logic, calculation engine, and API synchronization.
+- `transactions.csv`: The persistent flat-file database.
+
+---
+
+## 🛠️ Developer Setup & Compilation
 
 ### Prerequisites
-- A C++ compiler (GCC, Clang, or MSVC).
+- **Compiler**: GCC/G++ (MinGW-w64 recommended for Windows).
+- **Libraries**: `ws2_32` (Windows Sockets 2).
 
-### Compilation
+### Compilation Command
 ```bash
-g++ main.cpp -o PortfolioManager
+g++ server.cpp -o server.exe -lws2_32
 ```
 
-### Execution
-```bash
-./PortfolioManager
-```
+### Running the App
+1. Execute `./server.exe`.
+2. Open your browser to `http://localhost:8080`.
 
-The system will automatically attempt to load `transactions.csv` upon startup.
+---
+
+## 🔒 Security & Data Integrity
+- **Local-First**: Your financial data never leaves your machine.
+- **Atomic Operations**: CSV writes are handled sequentially to prevent data corruption.
+- **Import Validation**: The backend validates the 7-column schema during data restoration.
+
+---
+**StockPro** - Built with Performance and Privacy in mind.
